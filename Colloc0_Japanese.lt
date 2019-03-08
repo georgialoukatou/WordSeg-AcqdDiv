@@ -1,0 +1,54 @@
+1 1 Sentence --> Colloc0s
+1 1 Colloc0s --> Colloc0
+1 1 Colloc0s --> Colloc0 Colloc0s
+Colloc0 --> Phonemes
+1 1 Phonemes --> Phoneme
+1 1 Phonemes --> Phoneme Phonemes
+1 1 Phoneme -->ɘ
+1 1 Phoneme -->v
+1 1 Phoneme -->kʲ
+1 1 Phoneme -->l
+1 1 Phoneme -->ɸ
+1 1 Phoneme -->i
+1 1 Phoneme -->ə
+1 1 Phoneme -->uː
+1 1 Phoneme -->ɲ
+1 1 Phoneme -->d̠ʒ
+1 1 Phoneme -->p
+1 1 Phoneme -->rʲ
+1 1 Phoneme -->h
+1 1 Phoneme -->o
+1 1 Phoneme -->ʔ
+1 1 Phoneme -->ɡʲ
+1 1 Phoneme -->u
+1 1 Phoneme -->n
+1 1 Phoneme -->aː
+1 1 Phoneme -->d
+1 1 Phoneme -->mʲ
+1 1 Phoneme -->ɽ
+1 1 Phoneme -->t̠ʃ
+1 1 Phoneme -->�
+1 1 Phoneme -->j
+1 1 Phoneme -->ɡ
+1 1 Phoneme -->ts
+1 1 Phoneme -->eː
+1 1 Phoneme -->ŋ
+1 1 Phoneme -->ç
+1 1 Phoneme -->pʲ
+1 1 Phoneme -->x
+1 1 Phoneme -->bʲ
+1 1 Phoneme -->z
+1 1 Phoneme -->c
+1 1 Phoneme -->ʒ
+1 1 Phoneme -->e
+1 1 Phoneme -->t
+1 1 Phoneme -->oː
+1 1 Phoneme -->b
+1 1 Phoneme -->w
+1 1 Phoneme -->a
+1 1 Phoneme -->k
+1 1 Phoneme -->q
+1 1 Phoneme -->m
+1 1 Phoneme -->r
+1 1 Phoneme -->ʃ
+1 1 Phoneme -->s
