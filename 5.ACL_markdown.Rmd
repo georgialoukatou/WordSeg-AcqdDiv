@@ -1,0 +1,317 @@
+---
+title: "ACL_child_play"
+output: html_document
+author: "georgialoukatou"
+---
+
+
+## R Markdown
+
+This Markdown generates results for the ACL2019 paper "Is word segmentation child's play in all languages?"
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+RECALC=TRUE #turn TRUE if you need to re-run the analyses from scratch (i.e. results or stats have changed)
+
+#paths
+statsfile<-"~/Documents/fair_project/resultsACL/redo_results/results_final/stats.csv"
+outfolder<-"~/Documents/fair_project/resultsACL/redo_results/results_final/outfolder/"
+
+```
+
+
+
+```{r intro, eval=RECALC}
+
+#add some basic stats
+
+stats<-read.csv(statsfile)
+
+#remove capitals
+stats$language=gsub(".*Chintang.*", "chintang", stats$folder)
+stats$language=gsub(".*Japanese.*", "japanese", stats$language)
+stats$language=gsub(".*Indonesian.*", "indonesian", stats$language)
+stats$language=gsub(".*Turkish.*", "turkish", stats$language)
+stats$language=gsub(".*Inuktitut.*", "inuktitut", stats$language)
+stats$language=gsub(".*Russian.*", "russian", stats$language)
+stats$language=gsub(".*Yucatec.*", "yucatec", stats$language)
+stats$language=gsub(".*Sesotho.*", "sesotho", stats$language)
+
+
+# add stat metrics
+stats$utt_single_word<-(round(stats$corpus_nutts_single_word/stats$corpus_nutts,2))
+stats$utt_length<-(round(stats$syllables_tokens/stats$corpus_nutts,2))
+stats$word_length<-(round(stats$phones_tokens/stats$words_tokens,2))
+stats$word_hapax_ratio<-(round(stats$words_hapaxes/stats$words_types,2))
+
+
+
+####name data for each language
+
+statschintang=stats[stats$language=="chintang",]
+statsjapanese=stats[stats$language=="japanese",]
+statsindonesian=stats[stats$language=="indonesian",]
+statsinuktitut=stats[stats$language=="inuktitut",]
+statsrussian=stats[stats$language=="russian",]
+statssesotho=stats[stats$language=="sesotho",]
+statsturkish=stats[stats$language=="turkish",]
+statsyucatec=stats[stats$language=="yucatec",]
+
+
+languages<-c("inuktitut",  "chintang", "turkish",  "russian", "yucatec", "japanese", "sesotho", "indonesian")
+
+statstable=NULL
+
+for (lang in languages){
+ print(stats)
+ statlang<-stats[which(stats$language==lang), ]
+ print(statlang)
+ arraystats<-c(lang, round(statlang$corpus_nutts,2), round(statlang$words_tokens,2))
+  statstable<-rbind(statstable, arraystats)
+} 
+
+colnames(statstable)<-c("lang","#utts", "#words")
+statstable
+
+```
+***This code helped us fill in Table 1 of the paper. *** 
+
+
+
+
+
+```{r metrics, message=FALSE}
+
+#function counting correctly segmented, over, under and missegmentation word tokens
+library("rjson")
+library(ggplot2)
+library(plotly)
+library(plyr)
+library(lme4)
+library(car) 
+library("ggpubr")
+library(orca)
+library(effects)
+words_<-setNames(data.frame(matrix(ncol = 3, nrow = 0)), c("name", "metric"))
+overunder<-function(file, words_tokens){
+  name<-file
+  result <- fromJSON(file = name)
+  
+  over<-result$over
+  freqover<- sapply(over, function(x) x[1])
+  numbover<-Reduce("+", freqover)
+  if (is.null(numbover)){numbover <-0}
+  
+  under<-result$under
+  frequnder<- sapply(under, function(x) x[1])
+  numbunder<-Reduce("+", frequnder)
+  if (is.null(numbunder)){numbunder <-0}
+  
+  mis<-result$mis
+  freqmis<- sapply(mis, function(x) x[1])
+  numbmis<-Reduce("+", freqmis)
+  if (is.null(numbmis)){numbmis <-0}
+  
+  correct<-result$correct
+  freqcorrect<- sapply(correct, function(x) x[1])
+  numbcorrect<-Reduce("+", freqcorrect)
+  if (is.null(numbcorrect)){numbcorrect <-0}
+  
+  overpercentage<-numbover/words_tokens
+  underpercentage<-numbunder/words_tokens
+  mispercentage<-numbmis/words_tokens
+  correctpercentage<-numbcorrect/words_tokens
+
+  #create .csv file with correctly segmented, over, under and missegmentation
+  words_=rbind(c(name, "over", overpercentage), c(name, "under", underpercentage), c(name, "mis", mispercentage), c(name, "correct", correctpercentage))
+  write.table(words_, paste("/Users/lscpuser/Documents/fair_project/resultsACL/redo_results/results_final/overunder_new20000.csv"), quote=FALSE,sep = ',', append=TRUE, col.names = FALSE )  
+ 
+ }
+
+#call function for each language, the path folder should contain all *summary* files
+fileschintang<- list.files(path="/Users/lscpuser/Documents/fair_project/resultsACL/redo_results/results_final", pattern=c("Chintang.*summary"), full.names=TRUE)
+for (file in fileschintang){overunder(file,statschintang$words_tokens)}
+filesjapanese<- list.files(path="/Users/lscpuser/Documents/fair_project/resultsACL/redo_results/results_final", pattern=c("Japanese.*summary"), full.names=TRUE)
+for (file in filesjapanese){overunder(file,statsjapanese$words_tokens)}
+filesturkish<- list.files(path="/Users/lscpuser/Documents/fair_project/resultsACL/redo_results/results_final", pattern=c("Turkish.*summary"), full.names=TRUE)
+for (file in filesturkish){overunder(file,statsturkish$words_tokens)}
+filesindonesian<- list.files(path="/Users/lscpuser/Documents/fair_project/resultsACL/redo_results/results_final", pattern=c("Indonesian.*summary"), full.names=TRUE)
+for (file in filesindonesian){overunder(file, statsindonesian$words_tokens)}
+filesrussian<- list.files(path="/Users/lscpuser/Documents/fair_project/resultsACL/redo_results/results_final", pattern=c("Russian.*summary"), full.names=TRUE)
+for (file in filesrussian){overunder(file,statsrussian$words_tokens)}
+filesyucatec<- list.files(path="/Users/lscpuser/Documents/fair_project/resultsACL/results_final", pattern=c("Yucatec.*summary"), full.names=TRUE)
+for (file in filesyucatec){overunder(file,statsyucatec$words_tokens)}
+filesinuktitut<- list.files(path="/Users/lscpuser/Documents/fair_project/resultsACL/results_final", pattern=c("Inuktitut.*summary"), full.names=TRUE)
+for (file in filesinuktitut){overunder(file,statsinuktitut$words_tokens)}
+filessesotho<- list.files(path="/Users/lscpuser/Documents/fair_project/resultsACL/results_final", pattern=c("Sesotho.*summary"), full.names=TRUE)
+for (file in filessesotho){overunder(file,statssesotho$words_tokens)}
+
+
+```
+
+*** This code helped us create the results file "overunder.csv". ***
+
+
+```{r correctlyseg, message=FALSE}
+
+############################ read newly created .csv for statistics
+test<- read.csv("/Users/lscpuser/Documents/fair_project/resultsACL/redo_results/results_final/overunder_new.csv", header=FALSE, sep=",")
+names(test)<-c("index", "name", "metric","percentage")
+test$algo=gsub(".*_p_","",test$name)
+test$algo=gsub("_eval.*","",test$algo)
+test$lang=gsub(".*results_final/","",test$name)
+test$lang=gsub("_p_.*","",test$lang)
+test$algo<-factor(test$algo, c("base0", "base1", "base6", "dibs", "mir", "ftpr", "btpr", "puddle", "ag" , "mia", "ftpa", "btpa"))
+test$lang<-factor(test$lang, c("Chintang", "Turkish", "Inuktitut", "Yucatec", "Russian", "Indonesian", "Japanese" , "Sesotho"))
+test$metric<-factor(test$metric, c("mis", "under", "over", "correct"))
+
+
+
+languages<-c("Inuktitut",  "Chintang", "Turkish",  "Russian", "Yucatec", "Japanese", "Sesotho", "Indonesian")
+
+table2=NULL
+algos<-c("dibs", "mir", "ftpr", "btpr", "puddle", "ag" , "mia", "ftpa", "btpa")
+i<-0
+
+for (algo in algos){
+  i<-i+1
+  testalgocorrect<- test[which(test$algo==algo & test$metric=="correct"),]
+  mean<-mean(testalgocorrect$percentage)
+  min<-min(testalgocorrect$percentage)
+  max<-max(testalgocorrect$percentage)
+  algob0<-0
+  algob1<-0
+for (lang in languages){
+  testlang<-test[which(test$lang==lang), ]
+  testlang<-testlang[which(testlang$metric=="correct"), ]
+  testlangalgo<-testlang[which(testlang$algo==algo),]
+  testlangb0<-testlang[which(testlang$algo=="base0"),]
+  testlangb6<-testlang[which(testlang$algo=="base6"),]
+  if (testlangb0$percentage>testlangalgo$percentage)
+  algob0<-algob0 +1 
+  if (testlangb6$percentage>testlangalgo$percentage)
+  algob1<-algob1 +1 
+}
+  arrayalgo<-c(algo, 8-algob0,8-algob1, round(mean,2), round(min,2), round(max,2))
+  table2<-rbind(table2, arrayalgo)
+} 
+
+
+colnames(table2)<-c("algo","0", "1/6", "%mean", "%min", "%max")
+table2
+write.table(table2, paste0(outfolder,"table2.txt"), sep="\t&\t", eol="\t\\\\\n", quote = F )
+
+```
+
+***The results of the above code helped us fill in Table 2.***
+
+```{r correctlyseglang, eval=RECALC}
+
+table3=NULL
+
+for (lang in languages){
+  testlang<-test[which(test$lang==lang), ]
+  testlang<-testlang[which(testlang$metric=="correct"), ]
+  testlang<-testlang[which(testlang$algo !="base0" & testlang$algo !="base6" & testlang$algo !="base1" ), ]
+meanlang<-mean(testlang$percentage)
+minlang<-min(testlang$percentage)
+maxlang<-max(testlang$percentage)
+arraylang<-c(lang, round(meanlang,2), round(minlang,2), round(maxlang,2))
+table3<-rbind(table3, arraylang)
+
+}
+colnames(table3)<-c("lang", "%mean", "%min", "%max")
+table3
+write.table(table3, paste0(outfolder,"table3.txt"), sep="\t&\t", eol="\t\\\\\n", quote = F )
+
+
+```
+***The results of the above code helped us fill in Table 3.***
+
+```{r correlation, eval=RECALC}
+########################matrix correlation
+
+A = matrix( c(
+  3,	8,	1,	4,	6,	5,	7,	 2,	9,
+  1,	2,	4,	3,	6,	8,	9,	7,	5, 
+  1,	9,	2,	3,	5,	6,	7,	8,	4,
+  9,	7,	4,	1,  3,	5,	8,	6,	2, 
+  1,	3,	4,	7,	5,	8,	6,	9,	2,
+  1,	2,	4,	3,	5,	8,	9,	7,  6, 
+  1,	9,	4,	3,	5,	6,	7,	8, 2, 
+  1,	2,	6,	4,	5,	9,	7,	8,	3), nrow=8,           ncol=9,  
+  dimnames = list(c("Inuktitut","Chintang","Turkish", "Russian", "Yucatec", "Sesotho", "Indonesian", "Japanese"), 
+                  c("AG","PUDDLE","DIBS", "FTPa", "FTPr", "BTPa", "BTPr", "MIa", "MIr")),     byrow = TRUE)
+
+A<-t(A)
+res<-cor(A, method='spearman')
+print(res)
+library(corrplot)
+jpeg(file="~/Documents/fair_project/resultsACL/redo_results/results_final/cor.jpg", width = 7, height = 7, units = 'in', res = 400)
+corrplot(res, type="upper", col=c( "red4", "royalblue4"), method="number", bg="snow", tl.col="black", tl.srt=45)
+dev.off()
+
+
+```
+***This code helped us create Figure 1.*** 
+
+```{r paragraph, eval=RECALC}
+
+btpr<- test[which(test$algo=="btpr" & test$metric=="correct"),]
+ag<- test[which(test$algo=="ag" & test$metric=="correct"),]
+
+inu<- test[which(test$lang=="Inuktitut" & test$metric=="correct"),]
+indo<- test[which(test$lang=="Indonesian" & test$metric=="correct"),]
+
+chin<- test[which(test$lang=="Chintang" & test$metric=="correct"),]
+tur<- test[which(test$lang=="Turkish" & test$metric=="correct"),]
+inu<- test[which(test$lang=="Inuktitut" & test$metric=="correct"),]
+
+ses<- test[which(test$lang=="Sesotho" & test$metric=="correct"),]
+jap<- test[which(test$lang=="Japanese" & test$metric=="correct"),]
+
+complexarray<-c(mean(chin$percentage), mean(tur$percentage), mean(inu$percentage))
+simplearray<-c(mean(jap$percentage), mean(ses$percentage), mean(indo$percentage))
+complex<-mean(complexarray) 
+simple<-mean(simplearray) 
+
+
+```
+***This code helped us fill in the following paragraph. ***
+
+
+Our study is the first to explore segmentation differences across both multiple algorithms and multiple languages. We therefore are in a position to compare segmentation performance differences across these two. We found that differences in average performance across algorithms (min=`r round(mean(btpr$percentage),2) `
+ for BTPr, max= `r round(mean(ag$percentage),2) ` for AG, `r round(mean(ag$percentage),2) -round(mean(btpr$percentage),2)  `points) were larger than differences in performance across languages (min= `r round(mean(inu$percentage),2) ` for Inuktitut, max= `r round(mean(indo$percentage),2) ` for Indonesian, `r round(mean(indo$percentage),2) -round(mean(inu$percentage),2)` points). This indicates that variation across languages was comparatively small. Also, average percentage of correctly segmented words for the more morphologically complex languages (Chintang, Inuktitut and Turkish) was `r round(complex,2)  ` only `r round(simple,2) -round(complex,2) ` lower than average percentage for the simpler languages in our sample (Japanese, Sesotho and Indonesian). This is striking evidence that in this set of diverse languages, intrinsic differences in language structure may not be large enough to create particular difficulties in segmentation. 
+ 
+ ```{r appendix }
+table5=NULL
+algos<-c("ag", "dibs", "ftpa", "mir", "ftpr", "puddle" , "btpa", "mia", "btpr", "base0", "base6")
+i<-0
+
+
+  for (algo in algos){
+  testinucorrect<- inu[which(inu$algo==algo & inu$metric=="correct"),]
+  testchicorrect<- chin[which(chin$algo==algo & chin$metric=="correct"),]
+  testturkcorrect<- tur[which(tur$algo==algo & tur$metric=="correct"),]
+  testruscorrect<- rus[which(rus$algo==algo & rus$metric=="correct"),]
+  testyuccorrect<- yuc[which(yuc$algo==algo & yuc$metric=="correct"),]
+  testsescorrect<- ses[which(ses$algo==algo & ses$metric=="correct"),]
+  testindcorrect<- indo[which(indo$algo==algo & indo$metric=="correct"),]
+  testjapcorrect<- jap[which(jap$algo==algo & jap$metric=="correct"),]
+algoscore<-c(algo, round(testinucorrect$percentage,2)*100, round(testchicorrect$percentage,2)*100, round(testturkcorrect$percentage,2)*100,round(testruscorrect$percentage,2)*100,round(testyuccorrect$percentage,2)*100,round(testsescorrect$percentage,2)*100, round(testindcorrect$percentage,2)*100, round(testjapcorrect$percentage,2)*100)
+  
+  table5<-rbind(table5, algoscore)
+} 
+colnames(table5)<-c(  "algo", "Inu", "Chi", "Tur", "Rus", "Yuc", "Ses", "Ind", "Jap")
+write.table(table5, paste0(outfolder,"table5.txt"), sep="\t&\t", eol="\t\\\\\n", quote = F )
+table5
+
+```
+ 
+ 
+ 
+ 
+ 
+ 
+ 
